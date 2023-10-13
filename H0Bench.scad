@@ -1,3 +1,6 @@
+// The part to be generated
+part                      = "Bench"; // ["Bench", "Examples"]
+
 /* [Bench] */
 
 // Width of the bench (m)
@@ -56,6 +59,7 @@ support_front_inset       = 0.07; // [0.00 : 0.01 : 0.10]
 // Support side inset (m)  
 support_side_inset        = 0.10; // [0.00 : 0.05 : 1.00]
 
+// Number of legs
 leg_count                 = 2;    // [1 : 6]
 
 // Leg bridge height (m)
@@ -81,7 +85,8 @@ first_layer_height        = 0.2; // [0.06 : 0.01 : 0.4]
 
 /*********************************************************/
 
-Bench();
+if      (part == "Bench")    Bench();
+else if (part == "Examples") Examples();
 
 module Bench(
     bench_width               = scaled( m( bench_width)),
@@ -104,9 +109,11 @@ module Bench(
     leg_bridge_height         = scaled( m( leg_bridge_height)),
     leg_thickness             = nozzle(    leg_thickness),
 ) {
-    Support() {
-        SeatAndBackRest();
-        ArmRests();
+    rotate(-90) {
+        Support() {
+            SeatAndBackRest();
+            ArmRests();
+        }
     }
     
     module Support() {
@@ -307,6 +314,37 @@ module Bench(
         )
     );
 };
+
+module Examples() {
+    Grid(columns = 3) {
+        Bench(seat_type = "Flat",   backrest_type = "None", support_type = "Massive");
+        Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Massive");
+        Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Legs");
+        Bench(seat_type = "Planks", backrest_type = "None", support_type = "Massive");
+        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Massive");
+        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Legs");
+        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "None");
+        Bench(seat_type = "Planks", backrest_type = "Flat", support_type = "Massive");
+        Bench(seat_type = "Flat",   backrest_type = "Planks", support_type = "Legs");
+    }
+    
+    module Grid(columns) {
+        rows  = ceil($children / columns);
+        spacing  = [
+            1.5 * scaled(m(bench_width)),
+            max(2 * scaled(m(seat_depth)), 1.5 * scaled(m(bench_width)))
+        ];
+        for(column = [0 : columns - 1], row = [0:rows - 1]) {
+            index = row * columns + column;
+            if(index < $children) {
+                translate([
+                    spacing[0] * (column - (columns - 1) / 2),
+                    -spacing[1] * (row    - (rows    - 1) / 2),
+                ]) children(index);
+            }
+        }
+    }
+}
 
 // Constants
 VEC_X = [1, 0, 0];
