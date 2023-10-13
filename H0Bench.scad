@@ -6,6 +6,10 @@ part                      = "Bench"; // ["Bench", "Examples"]
 // Width of the bench (m)
 bench_width               = 1.8;  // [0.50 : 0.05 : 5.00]
 
+bench_corner_left         = 0;    // [-90 : 15 : 90]
+
+bench_corner_right        = 0;    // [-90 : 15 : 90]
+
 /* [Seat] */
 
 // Type of seat
@@ -90,6 +94,8 @@ else if (part == "Examples") Examples();
 
 module Bench(
     bench_width               = scaled( m( bench_width)),
+    bench_corner_left         = angle(     bench_corner_left),
+    bench_corner_right        = angle(     bench_corner_right),
     seat_type                 =            seat_type,
     seat_depth                = scaled( m( seat_depth)),
     seat_thickness            = nozzle(    seat_thickness),
@@ -132,9 +138,12 @@ module Bench(
         
         module Legs() {
             most_left_leg  = (bench_width - leg_thickness) / 2
-                           - support_side_inset;
-            most_right_leg = -most_left_leg;
-        
+                           - support_side_inset
+                           - tan(max(0, bench_corner_left / 2)) * leg_depth;
+            most_right_leg = support_side_inset
+                           - (bench_width - leg_thickness) / 2
+                           + tan(max(0, bench_corner_right / 2)) * leg_depth;;
+            
             if (leg_count == 1) {
                 Leg();
             } else {
@@ -167,8 +176,28 @@ module Bench(
         }
         
         module Massive() {
+            linear_extrude(support_height) {
+                polygon([
+                    [
+                        0,
+                        bench_width / 2 - support_side_inset
+                    ], [
+                        leg_depth,
+                        bench_width / 2 - support_side_inset
+                        - tan(bench_corner_left / 2) * leg_depth
+                    ], [
+                        leg_depth,
+                        - bench_width / 2 + support_side_inset
+                        + tan(bench_corner_right / 2) * leg_depth
+                    ], [
+                        0,
+                        - bench_width / 2 + support_side_inset
+                    ]
+                ]);
+            }
             translate([0, -(bench_width - support_side_inset) / 2]) {
-                cube([
+                
+                *cube([
                     leg_depth,
                     (bench_width - support_side_inset),
                     support_height
@@ -178,10 +207,25 @@ module Bench(
     }
     
     module SeatAndBackRest() {
-        rotate(90, VEC_X) {
-            linear_extrude(bench_width, center = true) {
-                Seat2D();
-                BackRest2D();
+        intersection() {
+            linear_extrude(
+                backrest_height,
+                convexity = 2
+            ) polygon([
+                [0, -bench_width / 2],
+                [seat_depth, -bench_width / 2 + tan(bench_corner_right / 2) * seat_depth],
+                [seat_depth,  bench_width / 2 - tan(bench_corner_left  / 2) * seat_depth],
+                [0, bench_width/ 2],
+            ]);
+            rotate(90, VEC_X) {
+                linear_extrude(
+                    bench_width + 2 * seat_depth,
+                    center = true,
+                    convexity = 10
+                ) {
+                    Seat2D();
+                    BackRest2D();
+                }
             }
         }
         
@@ -326,6 +370,9 @@ module Examples() {
         Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "None");
         Bench(seat_type = "Planks", backrest_type = "Flat", support_type = "Massive");
         Bench(seat_type = "Flat",   backrest_type = "Planks", support_type = "Legs");
+        Bench(bench_corner_left =  45, bench_corner_right =  45);
+        Bench(bench_corner_left = -90, bench_corner_right = -30);
+        Bench(bench_corner_left = -45, bench_corner_right = 45);
     }
     
     module Grid(columns) {
@@ -354,6 +401,8 @@ VEC_X = [1, 0, 0];
 function mm(x) = x;
 function cm(x) = x * mm(10);
 function  m(x) = x * mm(1000);
+
+function angle(x) = x;
 
 function layer(x, include_first_layer = false) = (
     include_first_layer ? (
