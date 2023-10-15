@@ -46,8 +46,32 @@ backrest_plank_thickness = 3;     // [0 : 5]
 
 /* [Arm rest] */
 
-// Type of arm rest
-armrest_type              = "None"; // ["None"]
+// Type of armrest
+armrest_type              = "None"; // ["None", "Massive"]
+
+// Number of armrests
+armrest_count             = 2;    // [1 : 6]
+
+// Distribution orientation
+armrest_distr_orientation = "Center"; // ["Left", "Center", "Right"]
+
+// Distribution pattern
+armrest_distr_pattern     = "1";  // ["1":"Even", "12":"Short-Long"]
+
+// Mirror distribution pattern
+armrest_distr_pattern_mirror = false;
+
+// Armrest side inset (m)
+armrest_side_inset        = 0.0;  // [0.00 : 0.05 : 0.50]
+
+// Length of armrest (m)
+armrest_length            = 0.50; // [0.20 : 0.05 : 2.00]
+
+// Height of armrest (m)
+armrest_height            = 0.20; // [0.05 : 0.05 : 0.30]
+
+// Width of armrest (nozzle)
+armrest_width             = 2;    // [1.0 : 0.5 : 4.0]
 
 /* [Support] */
 
@@ -107,6 +131,14 @@ module Bench(
     backrest_plank_count      =            backrest_plank_count,
     backrest_plank_thickness  = layer(     backrest_plank_thickness),
     armrest_type              =            armrest_type,
+    armrest_count             =            armrest_count,
+    armrest_distr_orientation =            armrest_distr_orientation,
+    armrest_distr_pattern     =            armrest_distr_pattern,
+    armrest_distr_pattern_mirror =         armrest_distr_pattern_mirror,
+    armrest_side_inset        = scaled( m( armrest_side_inset)),
+    armrest_length            = scaled( m( armrest_length)),
+    armrest_height            = scaled( m( armrest_height)),
+    armrest_width             = nozzle(    armrest_width),
     support_type              =            support_type,
     support_height            = scaled( m( support_height)),
     support_front_inset       = scaled( m( support_front_inset)),
@@ -115,11 +147,9 @@ module Bench(
     leg_bridge_height         = scaled( m( leg_bridge_height)),
     leg_thickness             = nozzle(    leg_thickness),
 ) {
-    rotate(-90) {
-        Support() {
-            SeatAndBackRest();
-            ArmRests();
-        }
+    Support() {
+        SeatAndBackRest();
+        ArmRests();
     }
     
     module Support() {
@@ -142,7 +172,7 @@ module Bench(
                            - tan(max(0, bench_corner_left / 2)) * leg_depth;
             most_right_leg = support_side_inset
                            - (bench_width - leg_thickness) / 2
-                           + tan(max(0, bench_corner_right / 2)) * leg_depth;;
+                           + tan(max(0, bench_corner_right / 2)) * leg_depth;
             
             if (leg_count == 1) {
                 Leg();
@@ -333,6 +363,8 @@ module Bench(
         else if (armrest_type == "Panel")    Panel();
         else assert(armrest_type == "None", "Unknown 'armrest_type'");
         
+        length_from_back = armrest_length + backrest_thickness;
+        
         module Floating() {
         }
         
@@ -340,9 +372,60 @@ module Bench(
         }
         
         module Massive() {
+            Distribute() {
+                height = armrest_height + seat_thickness;
+                translate([0, -armrest_width / 2]) {
+                    cube([length_from_back, armrest_width, height]);
+                }
+            }
         }
         
         module Panel() {
+        }
+        
+        module Distribute() {
+            most_left_position  = (bench_width - armrest_width) / 2
+                                - armrest_side_inset
+                                - tan(max(0, bench_corner_left / 2)) * length_from_back;
+            most_right_position = armrest_side_inset
+                                - (bench_width - armrest_width) / 2
+                                + tan(max(0, bench_corner_right / 2)) * length_from_back;
+            outer_postions = (armrest_distr_orientation == "Left") ? [
+                most_left_position,
+                most_right_position
+            ] : [
+                most_right_position,
+                most_left_position
+            ];
+            
+            if (armrest_count == 1 && armrest_distr_orientation == "Center") {
+                children();
+            } else {
+                is_pattern_centered = armrest_distr_orientation == "Center";
+                count   = distr_pattern_get(armrest_count - (is_pattern_centered ? 1 : 0));
+                
+                for (index = [0:armrest_count - 1]) {
+                    translate([
+                        0,
+                        between(
+                            outer_postions[0],
+                            outer_postions[1],
+                            distr_pattern_get(index) / count
+                        )
+                    ]) children();
+                    
+                }
+            }
+            
+            function distr_pattern_get(index) = (
+                pattern_get(
+                    reverse_if(
+                        num_string_to_num_array(armrest_distr_pattern),
+                        condition = armrest_distr_pattern_mirror
+                    ),
+                    index
+                )
+            );
         }
     }
     
@@ -360,7 +443,7 @@ module Bench(
 };
 
 module Examples() {
-    Grid(columns = 3) {
+    Grid(columns = 5) {
         Bench(seat_type = "Flat",   backrest_type = "None", support_type = "Massive");
         Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Massive");
         Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Legs");
@@ -373,6 +456,24 @@ module Examples() {
         Bench(bench_corner_left =  45, bench_corner_right =  45);
         Bench(bench_corner_left = -90, bench_corner_right = -30);
         Bench(bench_corner_left = -45, bench_corner_right = 45);
+        Bench(armrest_type = "Massive", armrest_count = 1,
+              armrest_distr_orientation="Left");
+        Bench(armrest_type = "Massive", armrest_count = 1,
+              armrest_distr_orientation="Center");
+        Bench(armrest_type = "Massive", armrest_count = 2);
+        Bench(armrest_type = "Massive", armrest_count = 2,
+              armrest_distr_orientation = "Left");
+        Bench(armrest_type = "Massive", armrest_count = 2,
+              armrest_distr_orientation = "Left", armrest_distr_pattern = "12");
+        Bench(armrest_type = "Massive", armrest_count = 2,
+              armrest_distr_orientation = "Left", armrest_distr_pattern = "12",
+              armrest_distr_pattern_mirror = true);
+        Bench(armrest_type = "Massive", armrest_count = 3,
+              armrest_distr_pattern = "12",
+              armrest_distr_pattern_mirror = true);
+        Bench(armrest_type = "Massive", armrest_count = 3,
+              armrest_distr_orientation = "Left", armrest_distr_pattern = "12",
+              armrest_distr_pattern_mirror = true);
     }
     
     module Grid(columns) {
@@ -418,4 +519,56 @@ function nozzle(x) = x * mm(nozzle_width);
 function scaled(x) = x * scale_nominator / scale_denominator;
 
 // Helper functions
+
 function between(a, b, f = 0.5) = (a * (1-f) + b * f);
+assert(between(3, 7     ) == 5);
+assert(between(3, 7, .25) == 4);
+
+function num_string_to_num_array(string) = [
+    for (c = string) ord(c) - ord("0")
+];
+assert(num_string_to_num_array("1234") == [1, 2, 3, 4]);
+
+function sum(array, from_index=0, till_index=undef) = (
+    (from_index < (is_num(till_index)?till_index:(len(array)))) ? (
+        array[from_index] + sum(array, from_index + 1, till_index = till_index)
+    ) : (
+        0
+    )
+);
+assert(sum([2, 3, 4, 5]                                ) == 14);
+assert(sum([2, 3, 4, 5], from_index = 0, till_index = 4) == 14);
+assert(sum([2, 3, 4, 5], from_index = 1                ) == 12);
+assert(sum([2, 3, 4, 5],                 till_index = 3) ==  9);
+assert(sum([2, 3, 4, 5], from_index = 1, till_index = 3) ==  7);
+
+function reverse(array, condition = true) = (
+    (condition) ? [
+        for(i = [0 : len(array) - 1]) array[len(array) - i - 1]
+    ] : (
+        array
+    )
+);
+assert(reverse([1, 2, 3]) == [3, 2, 1]);
+        
+function reverse_if(array, condition) = (
+    (condition) ? reverse(array) : array
+);
+assert(reverse_if([1, 2, 3], condition=true)  == [3, 2, 1]);
+assert(reverse_if([1, 2, 3], condition=false) == [1, 2, 3]);
+
+function pattern_get(pattern, index) = (
+    let(
+        period  = sum(pattern)
+    ) (
+        period * floor(index / len(pattern))
+        + sum(
+            pattern, 
+            till_index = index % len(pattern)
+        )
+    )
+);
+assert([for (i = [0 : 5]) pattern_get([1      ], i)], [0, 1, 2, 3, 4, 5]);
+assert([for (i = [0 : 5]) pattern_get([1, 2   ], i)], [0, 1, 3, 4, 6, 7]);
+assert([for (i = [0 : 5]) pattern_get([1, 3   ], i)], [0, 1, 4, 5, 8, 9]);
+assert([for (i = [0 : 5]) pattern_get([1, 2, 3], i)], [0, 1, 3, 6, 7, 9]);
