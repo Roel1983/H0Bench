@@ -52,8 +52,11 @@ armrest_type              = "None"; // ["None", "Massive"]
 // Number of armrests
 armrest_count             = 2;    // [1 : 6]
 
-// Distribution orientation
-armrest_distr_orientation = "Center"; // ["Left", "Center", "Right"]
+// Skip the most left armrest
+armrest_skip_most_left    = false;
+
+// Skip the most right armrest
+armrest_skip_most_right   = false;
 
 // Distribution pattern
 armrest_distr_pattern     = "1";  // ["1":"Even", "12":"Short-Long"]
@@ -132,7 +135,8 @@ module Bench(
     backrest_plank_thickness  = layer(     backrest_plank_thickness),
     armrest_type              =            armrest_type,
     armrest_count             =            armrest_count,
-    armrest_distr_orientation =            armrest_distr_orientation,
+    armrest_skip_most_left    =            armrest_skip_most_left,
+    armrest_skip_most_right   =            armrest_skip_most_right,
     armrest_distr_pattern     =            armrest_distr_pattern,
     armrest_distr_pattern_mirror =         armrest_distr_pattern_mirror,
     armrest_side_inset        = scaled( m( armrest_side_inset)),
@@ -363,7 +367,7 @@ module Bench(
         else if (armrest_type == "Panel")    Panel();
         else assert(armrest_type == "None", "Unknown 'armrest_type'");
         
-        length_from_back = armrest_length + backrest_thickness;
+        length_from_back = min(armrest_length + backrest_thickness, seat_depth);
         
         module Floating() {
         }
@@ -390,27 +394,24 @@ module Bench(
             most_right_position = armrest_side_inset
                                 - (bench_width - armrest_width) / 2
                                 + tan(max(0, bench_corner_right / 2)) * length_from_back;
-            outer_postions = (armrest_distr_orientation == "Left") ? [
-                most_left_position,
-                most_right_position
-            ] : [
-                most_right_position,
-                most_left_position
-            ];
             
-            if (armrest_count == 1 && armrest_distr_orientation == "Center") {
+            if (armrest_count == 1 && !armrest_skip_most_left && !armrest_skip_most_right) {
                 children();
             } else {
-                is_pattern_centered = armrest_distr_orientation == "Center";
-                count   = distr_pattern_get(armrest_count - (is_pattern_centered ? 1 : 0));
+                index_right_offset = armrest_skip_most_right ? 1 : 0;
+                index_left_offset  = armrest_skip_most_left  ? 1 : 0;
+                count              = distr_pattern_get(
+                                        armrest_count - 1
+                                        + index_right_offset
+                                        + index_left_offset);
                 
                 for (index = [0:armrest_count - 1]) {
                     translate([
                         0,
                         between(
-                            outer_postions[0],
-                            outer_postions[1],
-                            distr_pattern_get(index) / count
+                            most_right_position,
+                            most_left_position,
+                            distr_pattern_get(index + index_right_offset) / count
                         )
                     ]) children();
                     
@@ -449,6 +450,8 @@ module Examples() {
         Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Legs");
         Bench(seat_type = "Planks", backrest_type = "None", support_type = "Massive");
         Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Massive");
+        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Massive",
+              bench_width=scaled(m(.8)));
         Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Legs");
         Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "None");
         Bench(seat_type = "Planks", backrest_type = "Flat", support_type = "Massive");
@@ -457,23 +460,27 @@ module Examples() {
         Bench(bench_corner_left = -90, bench_corner_right = -30);
         Bench(bench_corner_left = -45, bench_corner_right = 45);
         Bench(armrest_type = "Massive", armrest_count = 1,
-              armrest_distr_orientation="Left");
+              armrest_skip_most_left=false, armrest_skip_most_right=true);
         Bench(armrest_type = "Massive", armrest_count = 1,
-              armrest_distr_orientation="Center");
+              armrest_skip_most_left=true, armrest_skip_most_right=true);
         Bench(armrest_type = "Massive", armrest_count = 2);
+        Bench(armrest_type = "Massive", armrest_count = 2, bench_width=scaled(m(.8)));
         Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_distr_orientation = "Left");
+              armrest_skip_most_left=false, armrest_skip_most_right=true);
         Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_distr_orientation = "Left", armrest_distr_pattern = "12");
+              armrest_skip_most_left=true, armrest_skip_most_right=true);
         Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_distr_orientation = "Left", armrest_distr_pattern = "12",
-              armrest_distr_pattern_mirror = true);
+              armrest_skip_most_left=false, armrest_skip_most_right=true,
+              armrest_distr_pattern = "12");
+        Bench(armrest_type = "Massive", armrest_count = 2,
+              armrest_skip_most_left=false, armrest_skip_most_right=true,
+              armrest_distr_pattern = "12", armrest_distr_pattern_mirror = true);
         Bench(armrest_type = "Massive", armrest_count = 3,
               armrest_distr_pattern = "12",
               armrest_distr_pattern_mirror = true);
         Bench(armrest_type = "Massive", armrest_count = 3,
-              armrest_distr_orientation = "Left", armrest_distr_pattern = "12",
-              armrest_distr_pattern_mirror = true);
+              armrest_skip_most_left=false, armrest_skip_most_right=true,
+              armrest_distr_pattern = "12", armrest_distr_pattern_mirror = true);
     }
     
     module Grid(columns) {
