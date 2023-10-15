@@ -1,6 +1,3 @@
-// The part to be generated
-part                      = "Bench"; // ["Bench", "Examples"]
-
 /* [Bench] */
 
 // Width of the bench (m)
@@ -114,17 +111,25 @@ layer_height              = 0.15; // [0.06 : 0.01 : 0.2]
 // First layer height of the 3D printer (mm)
 first_layer_height        = 0.2; // [0.06 : 0.01 : 0.4]
 
+/* [Example] */
+
+example_show             = false;
+
+example_shadow           = false;
+
+example_label            = false;
+
 /*********************************************************/
 
-if (part == "Bench") {
+if (example_show) {
+    Examples();
+} else {
     if ($preview) {
         Bench();
     } else {
         // Rotate for 3D printing
         rotate(-90, VEC_Y) Bench();
     }
-} else if (part == "Examples") {
-    Examples();
 }
 
 module Bench(
@@ -452,47 +457,134 @@ module Bench(
 };
 
 module Examples() {
-    Grid(columns = 5) {
-        Bench(seat_type = "Flat",   backrest_type = "None", support_type = "Massive");
-        Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Massive");
-        Bench(seat_type = "Flat",   backrest_type = "Flat", support_type = "Legs");
-        Bench(seat_type = "Planks", backrest_type = "None", support_type = "Massive");
-        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Massive");
-        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Massive",
-              bench_width=scaled(m(.8)));
-        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "Legs");
-        Bench(seat_type = "Planks", backrest_type = "Planks", support_type = "None");
-        Bench(seat_type = "Planks", backrest_type = "Flat", support_type = "Massive");
-        Bench(seat_type = "Flat",   backrest_type = "Planks", support_type = "Legs");
-        Bench(bench_corner_left =  45, bench_corner_right =  45);
-        Bench(bench_corner_left = -90, bench_corner_right = -30);
-        Bench(bench_corner_left = -45, bench_corner_right = 45);
-        Bench(armrest_type = "Massive", armrest_count = 1,
-              armrest_skip_most_left=false, armrest_skip_most_right=true);
-        Bench(armrest_type = "Massive", armrest_count = 1,
-              armrest_skip_most_left=true, armrest_skip_most_right=true);
-        Bench(armrest_type = "Massive", armrest_count = 2);
-        Bench(armrest_type = "Massive", armrest_count = 2, bench_width=scaled(m(.8)));
-        Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_skip_most_left=false, armrest_skip_most_right=true);
-        Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_skip_most_left=true, armrest_skip_most_right=true);
-        Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_skip_most_left=false, armrest_skip_most_right=true,
-              armrest_distr_pattern = "12");
-        Bench(armrest_type = "Massive", armrest_count = 2,
-              armrest_skip_most_left=false, armrest_skip_most_right=true,
-              armrest_distr_pattern = "12", armrest_distr_pattern_mirror = true);
-        Bench(armrest_type = "Massive", armrest_count = 3,
-              armrest_distr_pattern = "12",
-              armrest_distr_pattern_mirror = true);
-        Bench(armrest_type = "Massive", armrest_count = 3,
-              armrest_skip_most_left=false, armrest_skip_most_right=true,
-              armrest_distr_pattern = "12", armrest_distr_pattern_mirror = true);
+    Distribute() {
+        Example("a") Bench(
+            seat_type     = "Flat",
+            backrest_type = "None",
+            support_type  = "Massive");
+        Example("b") Bench(
+            seat_type     = "Flat",
+            backrest_type = "Flat",
+            support_type  = "Massive");
+        Example("c") Bench(
+            seat_type     = "Flat",
+            backrest_type = "Flat",
+            support_type  = "Legs");
+        Example("d") Bench(
+            seat_type     = "Planks",
+            backrest_type = "None",
+            support_type  = "Massive");
+        Example("e") Bench(
+            seat_type     = "Planks",
+            backrest_type = "Planks",
+            support_type  = "Massive");
+        Example("f") Bench(
+            seat_type     = "Planks",
+            backrest_type = "Planks",
+            support_type  = "Massive",
+            bench_width   = scaled(m(.8)));
+        Example("g") Bench(
+            seat_type = "Planks",
+            backrest_type = "Planks",
+            support_type  = "Legs");
+        Example("h") Bench(
+            seat_type = "Planks",
+            backrest_type = "Planks",
+            support_type  = "None");
+        Example("i") Bench(
+            seat_type     = "Planks",
+            backrest_type = "Flat",
+            support_type  = "Massive");
+        Example("j") Bench(
+            seat_type     = "Flat",
+            backrest_type = "Planks",
+            support_type  = "Legs");
+        Example("k") Bench(
+            bench_corner_left  =  45,
+            bench_corner_right =  45);
+        Example("l") Bench(
+            bench_corner_left  = -90,
+            bench_corner_right = -30);
+        Example("m") Bench(
+            bench_corner_left  = -45,
+            bench_corner_right = 45);
+        Example("n") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 1,
+            armrest_skip_most_left  = false,
+            armrest_skip_most_right = true);
+        Example("o") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 1,
+            armrest_skip_most_left  = true,
+            armrest_skip_most_right = true);
+        Example("p") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 2);
+        Example("q") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 2,
+            bench_width             = scaled(m(.8)));
+        Example("r") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 2,
+            armrest_skip_most_left  = false,
+            armrest_skip_most_right = true);
+        Example("s") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 2,
+            armrest_skip_most_left  = true,
+            armrest_skip_most_right = true);
+        Example("t") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 2,
+            armrest_skip_most_left  = false,
+            armrest_skip_most_right = true,
+            armrest_distr_pattern   = "12");
+        Example("u") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 2,
+            armrest_skip_most_left  = false,
+            armrest_skip_most_right = true,
+            armrest_distr_pattern   = "12",
+            armrest_distr_pattern_mirror = true);
+        Example("v") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 3,
+            armrest_distr_pattern   = "12",
+            armrest_distr_pattern_mirror = true);
+        Example("w") Bench(
+            armrest_type            = "Massive",
+            armrest_count           = 3,
+            armrest_skip_most_left  = false,
+            armrest_skip_most_right = true,
+            armrest_distr_pattern   = "12",
+            armrest_distr_pattern_mirror = true);
     }
     
-    module Grid(columns) {
-        rows  = ceil($children / columns);
+    module Example(name) {
+        if (example_shadow) {
+            color("black", alpha = 0.1) linear_extrude(0.01) {
+                projection() children();
+            }
+        }
+        children();
+        if (example_label) {
+            color("black") translate([scaled(m(seat_depth)) * 1.2, 0]) {
+                rotate($vpr[2], VEC_Z) rotate($vpr[1], VEC_Y) rotate($vpr[0], VEC_X)
+                translate([0,0,10])linear_extrude(0.01) text(
+                    text = name,
+                    size = 6,
+                    halign = "center",
+                    valign = "center"
+                );
+            }
+        }
+    }
+    
+    module Distribute() {
+        columns = round(sqrt($children));
+        rows    = ceil($children / columns);
         spacing  = [
             1.5 * scaled(m(bench_width)),
             max(2 * scaled(m(seat_depth)), 1.5 * scaled(m(bench_width)))
@@ -501,7 +593,7 @@ module Examples() {
             index = row * columns + column;
             if(index < $children) {
                 translate([
-                    spacing[0] * (column - (columns - 1) / 2),
+                    spacing[0]  * (column - (columns - 1) / 2),
                     -spacing[1] * (row    - (rows    - 1) / 2),
                 ]) children(index);
             }
@@ -512,6 +604,7 @@ module Examples() {
 // Constants
 VEC_X = [1, 0, 0];
 VEC_Y = [0, 1, 0];
+VEC_Z = [0, 0, 1];
 
 // Units
 
