@@ -3,9 +3,9 @@
 // Width of the bench (m)
 bench_width               = 1.8;  // [0.50 : 0.05 : 5.00]
 
-bench_corner_left         = 0;    // [-90 : 15 : 90]
+bench_corner_left         = 0;    // [-45.0 : 7.5 : 45.0]
 
-bench_corner_right        = 0;    // [-90 : 15 : 90]
+bench_corner_right        = 0;    // [-45.0 : 7.5 : 45.0]
 
 /* [Seat] */
 
@@ -23,6 +23,9 @@ seat_plank_count          = 4;    // [1 : 10]
 
 // Thickness of the plank (cm)
 seat_plank_thickness      = 3;    // [0.0 : 0.1: 10.0]
+
+// Seam width (%)
+seat_plank_seam           = 0.25; // [0.0 : 0.01 : 0.33]
 
 /* [Back rest] */
 
@@ -121,7 +124,7 @@ example_label            = false;
 
 /*********************************************************/
 
-if (example_show) {
+if (example_show || !is_undef(example_index)) {
     Examples();
 } else {
     if ($preview) {
@@ -141,6 +144,7 @@ module Bench(
     seat_thickness            = nozzle(    seat_thickness),
     seat_plank_count          =            seat_plank_count,
     seat_plank_thickness      = scaled(cm( seat_plank_thickness)),
+    seat_plank_seam           =            seat_plank_seam,
     backrest_type             =            backrest_type,
     backrest_height           = scaled( m( backrest_height)),
     backrest_thickness        = layer(     backrest_thickness),
@@ -186,10 +190,10 @@ module Bench(
         module Legs() {
             most_left_leg  = (bench_width - leg_thickness) / 2
                            - support_side_inset
-                           - tan(max(0, bench_corner_left / 2)) * leg_depth;
+                           - tan(max(0, bench_corner_left)) * leg_depth;
             most_right_leg = support_side_inset
                            - (bench_width - leg_thickness) / 2
-                           + tan(max(0, bench_corner_right / 2)) * leg_depth;
+                           + tan(max(0, bench_corner_right)) * leg_depth;
             
             if (leg_count == 1) {
                 Leg();
@@ -231,11 +235,11 @@ module Bench(
                     ], [
                         leg_depth,
                         bench_width / 2 - support_side_inset
-                        - tan(bench_corner_left / 2) * leg_depth
+                        - tan(bench_corner_left) * leg_depth
                     ], [
                         leg_depth,
                         - bench_width / 2 + support_side_inset
-                        + tan(bench_corner_right / 2) * leg_depth
+                        + tan(bench_corner_right) * leg_depth
                     ], [
                         0,
                         - bench_width / 2 + support_side_inset
@@ -260,8 +264,8 @@ module Bench(
                 convexity = 2
             ) polygon([
                 [0, -bench_width / 2],
-                [seat_depth, -bench_width / 2 + tan(bench_corner_right / 2) * seat_depth],
-                [seat_depth,  bench_width / 2 - tan(bench_corner_left  / 2) * seat_depth],
+                [seat_depth, -bench_width / 2 + tan(bench_corner_right) * seat_depth],
+                [seat_depth,  bench_width / 2 - tan(bench_corner_left ) * seat_depth],
                 [0, bench_width/ 2],
             ]);
             rotate(90, VEC_X) {
@@ -302,13 +306,13 @@ module Bench(
                                     between(x_from, x_to, 0.00),
                                     seat_thickness + 0,
                                 ], [
-                                    between(x_from, x_to, 0.25),
+                                    between(x_from, x_to, seat_plank_seam),
                                     seat_thickness + seat_plank_thickness
                                 ], [
-                                    between(x_from, x_to, 0.50),
+                                    between(x_from, x_to, 1.00 - 2 * seat_plank_seam),
                                     seat_thickness + seat_plank_thickness
                                 ], [
-                                    between(x_from, x_to, 0.75),
+                                    between(x_from, x_to, 1.00 - seat_plank_seam),
                                     seat_thickness + 0
                                 ],
                             ]
@@ -403,10 +407,10 @@ module Bench(
         module Distribute() {
             most_left_position  = (bench_width - armrest_width) / 2
                                 - armrest_side_inset
-                                - tan(max(0, bench_corner_left / 2)) * length_from_back;
+                                - tan(max(0, bench_corner_left)) * length_from_back;
             most_right_position = armrest_side_inset
                                 - (bench_width - armrest_width) / 2
-                                + tan(max(0, bench_corner_right / 2)) * length_from_back;
+                                + tan(max(0, bench_corner_right)) * length_from_back;
             
             if (armrest_count == 1 && !armrest_skip_most_left && !armrest_skip_most_right) {
                 children();
@@ -456,6 +460,7 @@ module Bench(
     );
 };
 
+example_index = undef;
 module Examples() {
     Distribute() {
         Example("a") Bench(
@@ -500,14 +505,14 @@ module Examples() {
             backrest_type = "Planks",
             support_type  = "Legs");
         Example("k") Bench(
-            bench_corner_left  =  45,
-            bench_corner_right =  45);
+            bench_corner_left  =  22.5,
+            bench_corner_right =  22.5);
         Example("l") Bench(
-            bench_corner_left  = -90,
-            bench_corner_right = -30);
-        Example("m") Bench(
             bench_corner_left  = -45,
-            bench_corner_right = 45);
+            bench_corner_right = -15);
+        Example("m") Bench(
+            bench_corner_left  = -22.5,
+            bench_corner_right = 22.5);
         Example("n") Bench(
             armrest_type            = "Massive",
             armrest_count           = 1,
@@ -583,20 +588,30 @@ module Examples() {
     }
     
     module Distribute() {
-        columns = round(sqrt($children));
-        rows    = ceil($children / columns);
-        spacing  = [
-            1.5 * scaled(m(bench_width)),
-            max(2 * scaled(m(seat_depth)), 1.5 * scaled(m(bench_width)))
-        ];
-        for(column = [0 : columns - 1], row = [0:rows - 1]) {
-            index = row * columns + column;
-            if(index < $children) {
-                translate([
-                    spacing[0]  * (column - (columns - 1) / 2),
-                    -spacing[1] * (row    - (rows    - 1) / 2),
-                ]) children(index);
+        if(is_undef(example_index)) {
+            columns = round(sqrt($children));
+            rows    = ceil($children / columns);
+            spacing  = [
+                1.5 * scaled(m(bench_width)),
+                max(2 * scaled(m(seat_depth)), 1.5 * scaled(m(bench_width)))
+            ];
+            for(column = [0 : columns - 1], row = [0:rows - 1]) {
+                index = row * columns + column;
+                if(index < $children) {
+                    translate([
+                        spacing[0]  * (column - (columns - 1) / 2),
+                        -spacing[1] * (row    - (rows    - 1) / 2),
+                    ]) children(index);
+                }
             }
+        } else {
+            if ($preview) {
+                children(example_index);
+            } else {
+                // Rotate for 3D printing
+                rotate(-90, VEC_Y) children(example_index);
+            }
+            
         }
     }
 }
