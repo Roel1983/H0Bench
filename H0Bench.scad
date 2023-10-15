@@ -116,8 +116,16 @@ first_layer_height        = 0.2; // [0.06 : 0.01 : 0.4]
 
 /*********************************************************/
 
-if      (part == "Bench")    Bench();
-else if (part == "Examples") Examples();
+if (part == "Bench") {
+    if ($preview) {
+        Bench();
+    } else {
+        // Rotate for 3D printing
+        rotate(-90, VEC_Y) Bench();
+    }
+} else if (part == "Examples") {
+    Examples();
+}
 
 module Bench(
     bench_width               = scaled( m( bench_width)),
@@ -503,6 +511,7 @@ module Examples() {
 
 // Constants
 VEC_X = [1, 0, 0];
+VEC_Y = [0, 1, 0];
 
 // Units
 
